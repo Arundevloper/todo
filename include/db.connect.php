@@ -10,7 +10,7 @@ class Dbh{
 		$this->servername="localhost";
 		$this->username="root";
 		$this->password="";
-		$this->dbname="course_outcome";
+		$this->dbname="todo";
                 //Creating 
 		$conn=new mysqli($this->servername,$this->username,$this->password,$this->dbname);
 		return $conn;

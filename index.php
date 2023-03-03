@@ -1,7 +1,18 @@
 
 <?php
+   session_start();
    require 'include/db.connect.php';
 
+   $insertData=new InsertData();
+   $tasklist=new Users();
+   $tasklists=$tasklist->getTheData("SELECT * FROM `task`");
+   $finished=$tasklist->getTheData("SELECT * FROM `task` where pending=0");
+   $pending=$tasklist->getTheData("SELECT * FROM `task` where pending=1");
+
+  
+  
+  
+   
 ?>
 
 <!doctype html>
@@ -24,7 +35,11 @@
   }
   .t{
     display: flex;
-    justify-content: center;
+ 
+  }
+  .notask{
+    display:flex;
+    justify-content:center;
   }
 </style>
   <title>Todo</title>
@@ -32,7 +47,37 @@
 </head>
 
 <body>
+ <?php
+  if(isset($_POST["submit"])){
+      
+    $title=$_POST['title'];
+    $description=$_POST['description'];
+    $result= $insertData->query("INSERT INTO `task` (`tasktitle`, `taskdesc`, `pending`) VALUES ('$title', '$description', '1');");
+    header("location:index.php");
+    echo"hello";
  
+ }
+ if(isset($_POST["delete"])){
+  echo '<script language="javascript">';
+    echo 'alert("message successfully sent")';
+   echo '</script>';
+   $delid=$_POST['taskid'];
+   $result= $insertData->query(" DELETE FROM task WHERE taskid=$delid;");
+   $_SESSION['delete']="true";
+   
+   header("location:index.php");
+
+   
+ }
+ if(isset($_POST["finished"])){
+  $delid=$_POST['taskid'];
+  $insertData->query("UPDATE `task` SET  `pending` = '0' WHERE `task`.`taskid` = $delid;");
+  $_SESSION['finish']="true";
+  header("location:index.php");
+ }
+ ?>
+
+
 
   <!-- Edit Modal -->
   <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel"
@@ -45,7 +90,7 @@
             <span aria-hidden="true">×</span>
           </button>
         </div>
-        <form action="/crud/index.php" method="POST">
+        <form action="/todo/index.php" method="POST">
           <div class="modal-body">
             <input type="hidden" name="snoEdit" id="snoEdit">
             <div class="form-group">
@@ -93,14 +138,17 @@
       </form>
     </div>
   </nav>
-
+<?php
   
+  
+
+  ?>
  
   <div class="container my-4 w-50">
     <div class="t">
     <h2>Add Task</h2>
   </div>
-    <form action="/crud/index.php" method="POST" >
+    <form action="/todo/index.php" method="POST" >
       <div class="form-group">
         <label for="title">Task Title </label>
         <input type="text" class="form-control" id="title" name="title" aria-describedby="emailHelp">
@@ -111,14 +159,74 @@
         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
       </div>
      <div class="addbtn">
-      <button type="submit" class="btn btn-outline-success">submit</button>
+      <button type="submit" class="btn btn-outline-success" name="submit" >Add Task</button>
     </div>
     </form>
   </div>
-
+  
+ 
+  
   <div class="container my-4">
 
+  <div class="t">
+  <button type="button" class="btn btn-danger my-2">Pending Task</button>
+  </div>
+  
+    <table class="table" id="myTable">
+      <thead>
+        <tr>
+          
+          <th scope="col">Title</th>
+          <th scope="col">Description</th>
+          <th scope="col ">Actions</th>
+          <th scope="col "></th>
+        </tr>
+      </thead>
+      <tbody>
+      
+       <?php
+          if (empty($pending)) {
+            echo"
+            <div class='notask'>
+            <h2>No Pending Task</h2>
+            </div>";
+          }
+          else{
+          
+         foreach($tasklists as $list)
+          {
+            
+            if($list['pending']==1){
+            echo "<tr>
+            
+            <td>". $list['tasktitle'] . "</td>
+            <td>". $list['taskdesc'] . "</td>
+            <form action='/todo/index.php' method='POST' >
+            <input  type='hidden' name='taskid' value='".$list['taskid']."'>
+            <td> <button class='delete btn btn-sm btn-danger'name='delete' >Delete</button>  </td>
+            
+    <td><button class='delete btn btn-sm btn-success ' name='finished' >Finished</button></td>
+    </form>
+            
+          </tr>";
+            }
+          
+          }
 
+          }
+
+        ?>
+
+
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="container my-4">
+
+  <div class="t">
+  <button type="button" class="btn btn-success my-2">Completed Task</button>
+  </div>
     <table class="table" id="myTable">
       <thead>
         <tr>
@@ -129,7 +237,41 @@
         </tr>
       </thead>
       <tbody>
+       <?php
        
+        if (empty($finished)) {
+          echo"
+          <tr>
+          <div class='notask'>
+          <h2>No finshed task</h2>
+          </div>
+          </tr>";
+          
+        }
+       
+       else{
+        $i=0;
+         foreach($tasklists as $list)
+          {
+            
+            if($list['pending']==0){
+            echo "<tr>
+            <th scope='row'>". $i. "</th>
+            <td>". $list['tasktitle'] . "</td>
+            <td>". $list['taskdesc'] . "</td>
+            <form action='/todo/index.php' method='POST' >
+            <input  type='hidden' name='taskid' value='".$list['taskid']."'>
+            <td> <button class='delete btn btn-sm btn-danger' name='delete' >Delete</button>  </td>
+
+            </form>
+          </tr>";
+          $i++;
+          }
+          
+        }
+        }
+
+        ?>
 
 
       </tbody>
@@ -140,7 +282,7 @@
   <!-- jQuery first, then Popper.js, then Bootstrap JS -->
   <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
     integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
-    crossorigin="anonymous"></script>
+    crossorigin="anonymous"></sodium_crypto_sign_ed25519_pk_to_curve25519>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
     integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
     crossorigin="anonymous"></script>
